@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("TechnicalTestProfescipta")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+aad946419a8186df8b5dd1f98a6843032d96bd84")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b8d3f17f92ba46170aa41c0400f3ac15a687c555")]
 [assembly: System.Reflection.AssemblyProductAttribute("TechnicalTestProfescipta")]
 [assembly: System.Reflection.AssemblyTitleAttribute("TechnicalTestProfescipta")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
