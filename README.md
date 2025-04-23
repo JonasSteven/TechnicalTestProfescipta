@@ -33,3 +33,15 @@ Pastikan untuk menginstal paket berikut agar proyek dapat berjalan dengan baik:
      ```bash
      Install-Package System.Data.SqlClient -Version 4.9.0
      ```
+
+### Pengaturan yang Harus Disesuaikan di `appsettings.json`
+
+Setelah meng-clone proyek ini, Anda perlu menyesuaikan beberapa pengaturan di file `appsettings.json` agar aplikasi dapat berjalan dengan benar di lingkungan lokal Anda. Berikut adalah langkah-langkah yang perlu dilakukan:
+
+1. **String Koneksi Database**
+Buka file `appsettings.json` dan sesuaikan string koneksi database sesuai dengan pengaturan di mesin Anda. Sebagai contoh, file `appsettings.json` di proyek ini berisi string koneksi seperti ini:
+
+```json
+"ConnectionStrings": {
+  "DefaultConnection": "Data Source=LAPTOP-PK6DOAKC\\SQLEXPRESS;Initial Catalog=TechnicalTestProfescipta;Integrated Security=True;Trust Server Certificate=True"
+}
