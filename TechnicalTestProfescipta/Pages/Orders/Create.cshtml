@@ -1,0 +1,217 @@
+﻿@page
+@model TechnicalTestProfescipta.Pages.Orders.CreateModel
+@{
+    ViewData["Title"] = "Add New - Sales Order";
+}
+
+<h2 class="text-white text-start bg-primary p-3 rounded">ADD NEW – SALES ORDER</h2>
+
+<form method="post">
+    <!-- SALES ORDER INFO -->
+    <div class="bg-light p-4 mb-4 rounded">
+        <h4 class="text-white text-center bg-dark py-2 rounded">Sales Order Information</h4>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label>Sales Order Number <span class="text-danger">*</span></label>
+                <input type="text" name="orderNo" class="form-control" required />
+            </div>
+            <div class="col-md-6 mb-3">
+                <label>Customer <span class="text-danger">*</span></label>
+                <select name="comCustomerId" class="form-control" required>
+                    <option value="" selected disabled>Select One</option>
+                    @foreach (var cust in Model.Customers)
+                    {
+                        <option value="@cust.COMCustomerId">@cust.CustomerName</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label>Order Date <span class="text-danger">*</span></label>
+                <input type="date" name="orderDate" class="form-control" required />
+            </div>
+            <div class="col-md-6 mb-3">
+                <label>Address</label>
+                <textarea name="address" class="form-control"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <!-- DETAIL ITEM INFO -->
+    <div class="bg-light p-4 mb-4 rounded">
+        <h4 class="text-white text-center bg-dark py-2 rounded">Detail Item Information</h4>
+        <button type="button" class="btn btn-danger mb-3" onclick="addItemRow()">Add Item</button>
+
+        <table class="table table-bordered" id="itemTable">
+            <thead class="table-dark">
+                <tr>
+                    <th>No</th>
+                    <th>ACTION</th>
+                    <th>ITEM NAME</th>
+                    <th>QTY</th>
+                    <th>PRICE</th>
+                    <th>TOTAL</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Will be filled dynamically via JS -->
+            </tbody>
+        </table>
+
+        <div class="d-flex justify-content-end">
+            <div class="me-5">
+                <strong>Total Item : </strong> <span id="totalItems">0</span>
+            </div>
+            <div>
+                <strong>Total Amount : </strong> <span id="totalAmount">0</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center">
+        <button type="submit" class="btn btn-danger">Save</button>
+        <a asp-page="./Index" class="btn btn-dark">Close</a>
+    </div>
+</form>
+
+@section Scripts {
+    <script>
+        let itemIndex = 0;
+
+        function addItemRow() {
+            itemIndex++;
+            const row = `
+                <tr data-index="${itemIndex}">
+                    <td>${itemIndex}</td>
+                    <td><button type="button" class="btn btn-sm btn-success" onclick="saveItem(${itemIndex})">💾</button></td>
+                    <td><input class="form-control item-name" type="text" /></td>
+                    <td><input class="form-control qty" type="number" min="1" value="1" oninput="calculateTotal(${itemIndex})" /></td>
+                    <td><input class="form-control price" type="number" min="0" value="0" oninput="calculateTotal(${itemIndex})" /></td>
+                    <td><input class="form-control total" type="text" readonly /></td>
+                </tr>
+            `;
+
+            document.querySelector("#itemTable tbody").insertAdjacentHTML("beforeend", row);
+
+            calculateTotal(itemIndex);
+        }
+
+        function calculateTotal(index) {
+            const row = document.querySelector(`tr[data-index="${index}"]`);
+            const qty = parseInt(row.querySelector('.qty').value) || 0;
+            const price = parseFloat(row.querySelector('.price').value) || 0;
+            const total = qty * price;
+
+            row.querySelector('.total').value = total.toLocaleString('id-ID');
+
+            updateSummary();
+        }
+
+        function updateSummary() {
+            const rows = document.querySelectorAll('#itemTable tbody tr');
+            let totalItems = 0;
+            let totalAmount = 0;
+
+            rows.forEach(row => {
+                const qty = parseInt(row.querySelector('.qty').value) || 0;
+                const price = parseFloat(row.querySelector('.price').value) || 0;
+                totalItems += qty;
+                totalAmount += qty * price;
+            });
+
+            document.getElementById("totalItems").innerText = totalItems;
+            document.getElementById("totalAmount").innerText = totalAmount.toLocaleString('id-ID');
+        }
+
+        function saveItem(index) {
+            const row = document.querySelector(`tr[data-index="${index}"]`);
+            const itemName = row.querySelector('.item-name').value.trim();
+            const qty = row.querySelector('.qty').value;
+            const price = row.querySelector('.price').value;
+
+            // Validasi
+            if (!itemName) {
+                alert("Item Name cannot be empty!");
+                return;
+            }
+
+            // Simpan data
+            const savedValues = { itemName, qty, price };
+            row.setAttribute('data-saved', JSON.stringify(savedValues));
+
+            // Nonaktifkan input
+            row.querySelectorAll('input').forEach(input => input.disabled = true);
+
+            // Tambahkan hidden input untuk POST ke backend
+            row.insertAdjacentHTML("beforeend", `
+                <input type="hidden" name="ItemNames[]" value="${itemName}" />
+                <input type="hidden" name="Quantities[]" value="${qty}" />
+                <input type="hidden" name="Prices[]" value="${price}" />
+            `);
+
+            // Ubah tombol
+            const actionCell = row.querySelector('td:nth-child(2)');
+            actionCell.innerHTML = `
+                <button type="button" class="btn btn-sm btn-warning" onclick="editItem(${index})">✏️</button>
+                <button type="button" class="btn btn-sm btn-danger" onclick="deleteItem(${index})">🗑️</button>
+            `;
+
+            updateSummary();
+        }
+
+        function editItem(index) {
+            const row = document.querySelector(`tr[data-index="${index}"]`);
+            // Mengaktifkan kembali semua input field di row
+            row.querySelectorAll('input').forEach(input => {
+                input.disabled = false;
+            });
+
+            // Menyimpan nilai sebelum mengedit untuk keperluan cancel
+            const savedValues = JSON.parse(row.getAttribute('data-saved'));
+
+            // Mengubah tombol Edit kembali menjadi Save dan Cancel
+            const actionCell = row.querySelector('td:nth-child(2)');
+            actionCell.innerHTML = `
+                <button type="button" class="btn btn-sm btn-success" onclick="saveItem(${index})">💾</button>
+                <button type="button" class="btn btn-sm btn-danger" onclick="cancelEdit(${index})">❌</button>
+            `;
+        }
+
+        function cancelEdit(index) {
+            const row = document.querySelector(`tr[data-index="${index}"]`);
+            const savedValues = JSON.parse(row.getAttribute('data-saved'));
+
+            row.querySelector('.item-name').value = savedValues.itemName;
+            row.querySelector('.qty').value = savedValues.qty;
+            row.querySelector('.price').value = savedValues.price;
+
+            // Menghitung ulang total
+            calculateTotal(index);
+
+            // Menonaktifkan input dan mengubah tombol aksi
+            row.querySelectorAll('input').forEach(input => input.disabled = true);
+            const actionCell = row.querySelector('td:nth-child(2)');
+            actionCell.innerHTML = `
+                <button type="button" class="btn btn-sm btn-warning" onclick="editItem(${index})">✏️</button>
+                <button type="button" class="btn btn-sm btn-danger" onclick="deleteItem(${index})">🗑️</button>
+            `;
+            updateSummary(); // Update total item dan total amount
+        }
+
+
+        function deleteItem(index) {
+            const row = document.querySelector(`tr[data-index="${index}"]`);
+            row.remove();
+            updateSummary();
+        }
+
+        // Cegah submit jika tidak ada detail item
+        document.querySelector("form").addEventListener("submit", function (e) {
+            const itemCount = document.querySelectorAll('input[name="ItemNames[]"]').length;
+
+            if (itemCount === 0) {
+                e.preventDefault();
+                alert("Please add at least one item detail before saving.");
+            }
+        });
+    </script>
+}

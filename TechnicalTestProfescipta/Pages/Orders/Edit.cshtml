@@ -1,0 +1,246 @@
+﻿@page "{id:int}"
+@model TechnicalTestProfescipta.Pages.Orders.EditModel
+@{
+    ViewData["Title"] = "Edit - Sales Order";
+}
+
+<h2 class="text-white text-start bg-primary p-3 rounded">EDIT – SALES ORDER</h2>
+
+<form method="post">
+    <!-- SALES ORDER INFO -->
+    <div class="bg-light p-4 mb-4 rounded">
+        <h4 class="text-white text-center bg-dark py-2 rounded">Sales Order Information</h4>
+        <input type="hidden" asp-for="SalesOrder.SOOrderId" />
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label>Sales Order Number <span class="text-danger">*</span></label>
+                <input asp-for="SalesOrder.OrderNo" class="form-control" required />
+            </div>
+            <div class="col-md-6 mb-3">
+                <label>Customer <span class="text-danger">*</span></label>
+                <select asp-for="SalesOrder.COMCustomerId" class="form-control" required>
+                    <option value="">Select One</option>
+                    @foreach (var cust in Model.Customers)
+                    {
+                        <option value="@cust.COMCustomerId" selected="@(cust.COMCustomerId == Model.SalesOrder.COMCustomerId)">
+                            @cust.CustomerName
+                        </option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label>Order Date <span class="text-danger">*</span></label>
+                <input asp-for="SalesOrder.OrderDate" type="date" class="form-control" required />
+            </div>
+            <div class="col-md-6 mb-3">
+                <label>Address</label>
+                <textarea asp-for="SalesOrder.Address" class="form-control"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <!-- DETAIL ITEM INFO -->
+    <div class="bg-light p-4 mb-4 rounded">
+        <h4 class="text-white text-center bg-dark py-2 rounded">Detail Item Information</h4>
+        <button type="button" class="btn btn-danger mb-3" onclick="addItemRow()">Add Item</button>
+
+        <table class="table table-bordered" id="itemTable">
+            <thead class="table-dark">
+                <tr>
+                    <th>No</th>
+                    <th>ACTION</th>
+                    <th>ITEM NAME</th>
+                    <th>QTY</th>
+                    <th>PRICE</th>
+                    <th>TOTAL</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (int i = 0; i < Model.ExistingItems.Count; i++)
+                {
+                    var item = Model.ExistingItems[i];
+                    <tr data-index="@i" data-saved='@Html.Raw(Json.Serialize(item))'>
+                        <td>@(i + 1)</td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-warning" onclick="editItem(@i)">✏️</button>
+                            <button type="button" class="btn btn-sm btn-danger" onclick="deleteItem(@i)">🗑️</button>
+                        </td>
+                        <td>
+                            <input type="text" class="form-control item-name" value="@item.ItemName" disabled />
+                        </td>
+                        <td>
+                            <input type="number" class="form-control qty" value="@item.Quantity" oninput="calculateTotal(@i)" disabled />
+                        </td>
+                        <td>
+                            <input type="number" class="form-control price" value="@item.Price" oninput="calculateTotal(@i)" disabled />
+                        </td>
+                        @{
+                            var total = (item.Quantity * item.Price).ToString("N0");
+                        }
+                        <td>
+                            <input type="text" class="form-control total" value="@total" readonly />
+                        </td>
+
+                        <input type="hidden" name="ItemNames[]" value="@item.ItemName" />
+                        <input type="hidden" name="Quantities[]" value="@item.Quantity" />
+                        <input type="hidden" name="Prices[]" value="@item.Price" />
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <div class="d-flex justify-content-end">
+            <div class="me-5">
+                <strong>Total Item : </strong> <span id="totalItems">0</span>
+            </div>
+            <div>
+                <strong>Total Amount : </strong> <span id="totalAmount">0</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center">
+        <button type="submit" class="btn btn-danger">Save</button>
+        <a asp-page="./Index" class="btn btn-dark">Close</a>
+    </div>
+</form>
+
+@section Scripts {
+    <script>
+        let itemIndex = document.querySelectorAll("#itemTable tbody tr").length;
+
+        function addItemRow() {
+            itemIndex++;
+            const row = `
+                <tr data-index="${itemIndex}">
+                    <td>${itemIndex}</td>
+                    <td><button type="button" class="btn btn-sm btn-success" onclick="saveItem(${itemIndex})">💾</button></td>
+                    <td><input class="form-control item-name" type="text" /></td>
+                    <td><input class="form-control qty" type="number" min="1" value="1" oninput="calculateTotal(${itemIndex})" /></td>
+                    <td><input class="form-control price" type="number" min="0" value="0" oninput="calculateTotal(${itemIndex})" /></td>
+                    <td><input class="form-control total" type="text" readonly /></td>
+                </tr>
+            `;
+
+            document.querySelector("#itemTable tbody").insertAdjacentHTML("beforeend", row);
+
+            calculateTotal(itemIndex);
+        }
+
+        function calculateTotal(index) {
+            const row = document.querySelector(`tr[data-index="${index}"]`);
+            const qty = parseInt(row.querySelector('.qty').value) || 0;
+            const price = parseFloat(row.querySelector('.price').value) || 0;
+            const total = qty * price;
+
+            row.querySelector('.total').value = total.toLocaleString('id-ID');
+
+            updateSummary();
+        }
+
+        function updateSummary() {
+            const rows = document.querySelectorAll('#itemTable tbody tr');
+            let totalItems = 0;
+            let totalAmount = 0;
+            rows.forEach(row => {
+                const qty = parseInt(row.querySelector('.qty')?.value || 0);
+                const price = parseFloat(row.querySelector('.price')?.value || 0);
+                totalItems += qty;
+                totalAmount += qty * price;
+            });
+
+            document.getElementById("totalItems").innerText = totalItems;
+            document.getElementById("totalAmount").innerText = totalAmount.toLocaleString('id-ID');
+        }
+
+        function saveItem(index) {
+            const row = document.querySelector(`tr[data-index="${index}"]`);
+            const itemName = row.querySelector('.item-name').value.trim();
+            const qty = row.querySelector('.qty').value;
+            const price = row.querySelector('.price').value;
+
+            if (!itemName) {
+                alert("Item Name cannot be empty!");
+                return;
+            }
+
+            row.setAttribute('data-saved', JSON.stringify({ itemName, qty, price }));
+            row.querySelectorAll('input').forEach(input => input.disabled = true);
+
+            row.insertAdjacentHTML("beforeend", `
+                <input type="hidden" name="ItemNames[]" value="${itemName}" />
+                <input type="hidden" name="Quantities[]" value="${qty}" />
+                <input type="hidden" name="Prices[]" value="${price}" />
+            `);
+            const actionCell = row.querySelector('td:nth-child(2)');
+            actionCell.innerHTML = `
+                <button type="button" class="btn btn-sm btn-warning" onclick="editItem(${index})">✏️</button>
+                <button type="button" class="btn btn-sm btn-danger" onclick="deleteItem(${index})">🗑️</button>
+            `;
+
+            updateSummary();
+        }
+
+        function editItem(index) {
+            const row = document.querySelector(`tr[data-index="${index}"]`);
+            const savedValues = JSON.parse(row.getAttribute('data-saved'));
+
+            // Enable input fields for editing
+            row.querySelector('.item-name').disabled = false;
+            row.querySelector('.qty').disabled = false;
+            row.querySelector('.price').disabled = false;
+
+            // Set action buttons for Save/Cancel
+            const actionCell = row.querySelector('td:nth-child(2)');
+            actionCell.innerHTML = `
+                <button type="button" class="btn btn-sm btn-success" onclick="saveItem(${index})">💾</button>
+                <button type="button" class="btn btn-sm btn-danger" onclick="cancelEdit(${index})">❌</button>
+            `;
+        }
+
+        function cancelEdit(index) {
+            const row = document.querySelector(`tr[data-index="${index}"]`);
+
+            // Ambil nilai yang sudah disimpan di data-saved
+            const savedValues = JSON.parse(row.getAttribute('data-saved'));
+
+            // Set kembali nilai input dengan yang disimpan sebelumnya
+            row.querySelector('.item-name').value = savedValues.itemName;
+            row.querySelector('.qty').value = savedValues.qty || savedValues.quantity;  // Pastikan qty tetap
+            row.querySelector('.price').value = savedValues.price;
+
+            // Nonaktifkan input setelah cancel
+            row.querySelectorAll('input').forEach(input => {
+                input.disabled = true;
+            });
+
+            // Ganti tombol aksi kembali ke tombol Edit
+            const actionCell = row.querySelector('td:nth-child(2)');
+            actionCell.innerHTML = `
+                <button type="button" class="btn btn-sm btn-warning" onclick="editItem(${index})">✏️</button>
+                <button type="button" class="btn btn-sm btn-danger" onclick="deleteItem(${index})">🗑️</button>
+            `;
+
+            // Update Total Row dan Summary setelah Cancel
+            calculateTotal(index);
+
+            updateSummary();
+        }
+
+        function deleteItem(index) {
+            const row = document.querySelector(`tr[data-index="${index}"]`);
+            row.remove();
+            updateSummary();
+        }
+
+        document.querySelector("form").addEventListener("submit", function (e) {
+            const itemCount = document.querySelectorAll('input[name="ItemNames[]"]').length;
+            if (itemCount === 0) {
+                e.preventDefault();
+                alert("Please add at least one item detail before saving.");
+            }
+        });
+
+        updateSummary(); // hitung ulang saat load
+    </script>
+}
