@@ -1,6 +1,6 @@
 # Technical Test Profescipta
 
-Deskripsi singkat tentang proyek.
+Pembuatan Web Apps Sederhana dengan ASP.NET Core Web App (Razor Page)
 
 ## Dependencies
 
