@@ -24,11 +24,17 @@ namespace TechnicalTestProfescipta.Pages.Orders
         [BindProperty(SupportsGet = true)]
         public DateTime? FilterDate { get; set; }
 
+        [BindProperty(SupportsGet = true)]
+        public int PageNumber { get; set; } = 1;
+        public int PageSize { get; set; } = 10;
+        public int TotalPages { get; set; }
+        public int TotalItems { get; set; }
+
         public async Task OnGetAsync()
         {
             var query = _context.SOOrders
-                        .Include(o => o.Customer)
-                        .AsQueryable();
+                .Include(o => o.Customer)
+                .AsQueryable();
 
             if (!string.IsNullOrEmpty(SearchKeyword))
             {
@@ -40,7 +46,15 @@ namespace TechnicalTestProfescipta.Pages.Orders
                 query = query.Where(o => o.OrderDate == FilterDate);
             }
 
-            SOOrderList = await query.ToListAsync();
+            int totalItems = await query.CountAsync();
+            TotalItems = totalItems;
+            TotalPages = (int)Math.Ceiling(totalItems / (double)PageSize);
+
+            SOOrderList = await query
+                .OrderBy(o => o.OrderDate)
+                .Skip((PageNumber - 1) * PageSize)
+                .Take(PageSize)
+                .ToListAsync();
         }
 
         public async Task<IActionResult> OnGetExportExcelAsync()
